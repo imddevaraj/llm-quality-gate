@@ -1,0 +1,2 @@
+{"id":"class-001","feature_name":"classification","input":"I was charged twice for my subscription.","expected_output":"billing","checks":{"max_latency_ms":3000},"tags":["billing"],"severity":"critical"}
+{"id":"class-002","feature_name":"classification","input":"The mobile app closes when I open settings.","expected_output":"technical","checks":{"max_latency_ms":3000},"tags":["technical"],"severity":"normal"}

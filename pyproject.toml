@@ -1,0 +1,59 @@
+[project]
+name = "llm-regression"
+version = "0.1.0"
+description = "CI quality gates for LLM features"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "LLM Regression Detection contributors" }]
+keywords = ["llm", "evaluation", "regression-testing", "ci", "quality-gate"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development :: Testing",
+]
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "pydantic>=2.7,<3",
+  "pydantic-settings>=2.2,<3",
+  "sqlalchemy>=2.0,<3",
+  "psycopg[binary]>=3.2,<4",
+  "typer>=0.12,<1",
+  "pyyaml>=6,<7",
+  "jsonschema>=4.22,<5",
+  "uvicorn[standard]>=0.30,<1",
+]
+
+[project.urls]
+Homepage = "https://github.com/imddevaraj/llm-quality-gate"
+Repository = "https://github.com/imddevaraj/llm-quality-gate"
+Issues = "https://github.com/imddevaraj/llm-quality-gate/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9", "pytest-asyncio>=0.23,<1"]
+dev = ["poethepoet>=0.29,<1"]
+
+[project.scripts]
+llm-regression = "llm_regression.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.poe.tasks]
+test = "pytest -q"
+compile = "python -m compileall -q src"
+validate = "llm-regression validate --config configs/candidate.yaml --dataset datasets/summarization.jsonl"
+cli-help = "llm-regression --help"
+api = "uvicorn llm_regression.api:app --reload --host 0.0.0.0 --port 8000"
+run-sample = "llm-regression run --baseline configs/baseline.yaml --candidate configs/candidate.yaml --dataset datasets/summarization.jsonl --repeats 3"
+
+[tool.poe.tasks.check]
+sequence = ["test", "compile", "validate"]
+help = "Run the local quality checks without calling an LLM."
