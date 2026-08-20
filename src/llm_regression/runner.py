@@ -70,7 +70,9 @@ async def evaluate_config(config: dict[str, Any], cases: list[dict[str, Any]], r
 
 async def run_evaluation(baseline_path: str, candidate_path: str, dataset_path: str, repeats: int = 1) -> EvaluationReport:
     cases = load_dataset(dataset_path)
-    baseline = await evaluate_config(load_config(baseline_path), cases, repeats)
+    baseline_config = load_config(baseline_path)
+    baseline = await evaluate_config(baseline_config, cases, repeats)
+    baseline.baseline_model = baseline_config["provider"]["model"]
     candidate_config = load_config(candidate_path)
     candidate = await evaluate_config(candidate_config, cases, repeats)
     candidate.git_sha = os.getenv("GITHUB_SHA") or os.getenv("GIT_SHA")

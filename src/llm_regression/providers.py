@@ -56,6 +56,18 @@ class OpenAICompatibleProvider(LLMProvider):
                     completion_tokens=usage.get("completion_tokens", 0),
                     model=data.get("model", self.config.model),
                 )
+            except httpx.HTTPStatusError as exc:
+                response_body = exc.response.text[:500]
+                last_error = RuntimeError(f"HTTP {exc.response.status_code}: {response_body}")
+                if exc.response.status_code not in {408, 409, 429} and exc.response.status_code < 500:
+                    break
+                if attempt < self.retries - 1:
+                    retry_after = exc.response.headers.get("retry-after")
+                    try:
+                        delay = min(float(retry_after), 30) if retry_after else min(2**attempt, 8)
+                    except ValueError:
+                        delay = min(2**attempt, 8)
+                    await asyncio.sleep(delay)
             except (httpx.HTTPError, KeyError, IndexError, TypeError) as exc:
                 last_error = exc
                 if attempt < self.retries - 1:
