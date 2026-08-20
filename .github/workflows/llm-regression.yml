@@ -12,8 +12,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - run: pip install '.[test,dev]'
@@ -32,10 +32,18 @@ jobs:
       GITHUB_SHA: ${{ github.sha }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - run: pip install .
+      - name: Check provider credentials
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY is not configured. Add it in Settings > Secrets and variables > Actions."
+            exit 2
+          fi
       - name: Run golden evaluation
         run: llm-regression run --baseline configs/baseline.yaml --candidate configs/candidate.yaml --dataset datasets/summarization.jsonl --repeats 3

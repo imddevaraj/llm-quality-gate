@@ -53,3 +53,12 @@ def test_policy_blocks_token_cost_increase():
     report = compare_reports(baseline, candidate, {"thresholds": {"cost_increase": 0.15}})
     assert report.status == Status.REGRESSION
     assert any("cost increased" in failure for failure in report.failures)
+
+
+def test_policy_reports_provider_errors_without_crashing():
+    error_case = CaseResult("1", "support", Status.ERROR, None, None, None, error="provider unavailable")
+    baseline = EvaluationReport(Status.ERROR, "support", [error_case], {}, [])
+    candidate = EvaluationReport(Status.ERROR, "support", [error_case], {}, [])
+    report = compare_reports(baseline, candidate, {"thresholds": {"quality_drop": 0.03}})
+    assert report.status == Status.ERROR
+    assert "provider unavailable" in report.failures[0]

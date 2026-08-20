@@ -9,6 +9,11 @@ def _median_metric(results: list[CaseResult], name: str) -> float:
     return float(median(values)) if values else 0.0
 
 
+def _median_score(results: list[CaseResult]) -> float:
+    values = [item.candidate_score for item in results if item.candidate_score is not None]
+    return float(median(values)) if values else 0.0
+
+
 def _median_tokens(results: list[CaseResult]) -> float:
     values = [item.total_tokens for item in results if item.total_tokens is not None]
     return float(median(values)) if values else 0.0
@@ -44,8 +49,8 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport, pol
         if status in {Status.REGRESSION, Status.ERROR}:
             failures.append(f"{result.case_id}: {', '.join(result.failures) or result.error or 'regression'}")
         case_results.append(CaseResult(**{**result.__dict__, "baseline_score": baseline_score, "score_delta": delta, "status": status}))
-    baseline_quality = median([x.candidate_score for x in baseline.case_results if x.candidate_score is not None]) if baseline.case_results else 0
-    candidate_quality = median([x.candidate_score for x in candidate.case_results if x.candidate_score is not None]) if candidate.case_results else 0
+    baseline_quality = _median_score(baseline.case_results)
+    candidate_quality = _median_score(candidate.case_results)
     baseline_latency = _p95([item.latency_ms for item in baseline.case_results if item.latency_ms is not None])
     candidate_latency = _p95([item.latency_ms for item in candidate.case_results if item.latency_ms is not None])
     baseline_cost = _median_tokens(baseline.case_results)
@@ -75,7 +80,7 @@ def compare_reports(baseline: EvaluationReport, candidate: EvaluationReport, pol
         failures.append(f"p95 latency increased beyond {float(latency_increase):.2%}")
     if cost_increase is not None and baseline_cost and candidate_cost > baseline_cost * (1 + float(cost_increase)):
         failures.append(f"cost increased beyond {float(cost_increase):.2%}")
-    status = Status.REGRESSION if failures else Status.PASS
+    status = Status.ERROR if any(item.status == Status.ERROR for item in case_results) else Status.REGRESSION if failures else Status.PASS
     if any(x.status == Status.FLAKY for x in case_results):
         status = Status.FLAKY if status == Status.PASS else status
     return EvaluationReport(status=status, feature_name=all_features, case_results=case_results, metrics=metrics, failures=failures, git_sha=candidate.git_sha, branch=candidate.branch, baseline_model=baseline.baseline_model, candidate_model=candidate.candidate_model)
